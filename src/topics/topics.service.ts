@@ -1,20 +1,18 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../common/prisma.service';
+import { DatabaseService } from '../common/database.service';
 import { CreateTopicDto, UpdateTopicDto } from './dto';
 
 @Injectable()
 export class TopicsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private db: DatabaseService) {}
 
   async create(userId: string, dto: CreateTopicDto) {
-    const topic = await this.prisma.topic.create({
-      data: {
-        userId,
-        title: dto.title,
-        category: dto.category,
-        notes: dto.notes,
-        codeSnippet: dto.codeSnippet,
-      },
+    const topic = await this.db.createTopic({
+      user_id: userId,
+      title: dto.title,
+      category: dto.category,
+      notes: dto.notes,
+      code_snippet: dto.codeSnippet,
     });
 
     // Create initial revision schedule
@@ -24,22 +22,17 @@ export class TopicsService {
   }
 
   async findAll(userId: string) {
-    return this.prisma.topic.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.db.findTopicsByUserId(userId);
   }
 
   async findOne(id: string, userId: string) {
-    const topic = await this.prisma.topic.findUnique({
-      where: { id },
-    });
+    const topic = await this.db.findTopicById(id);
 
     if (!topic) {
       throw new NotFoundException('Topic not found');
     }
 
-    if (topic.userId !== userId) {
+    if (topic.user_id !== userId) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -49,23 +42,18 @@ export class TopicsService {
   async update(id: string, userId: string, dto: UpdateTopicDto) {
     await this.findOne(id, userId);
 
-    return this.prisma.topic.update({
-      where: { id },
-      data: {
-        title: dto.title,
-        category: dto.category,
-        notes: dto.notes,
-        codeSnippet: dto.codeSnippet,
-      },
+    return this.db.updateTopic(id, {
+      title: dto.title,
+      category: dto.category,
+      notes: dto.notes,
+      code_snippet: dto.codeSnippet,
     });
   }
 
   async remove(id: string, userId: string) {
     await this.findOne(id, userId);
 
-    return this.prisma.topic.delete({
-      where: { id },
-    });
+    return this.db.deleteTopic(id);
   }
 
   private async createInitialRevisions(topicId: string, userId: string) {
@@ -73,14 +61,12 @@ export class TopicsService {
     const schedule = [1, 3, 7, 15, 30]; // Days from now
 
     const revisions = schedule.map((days) => ({
-      topicId,
-      userId,
-      dueDate: new Date(now.getTime() + days * 24 * 60 * 60 * 1000),
+      topic_id: topicId,
+      user_id: userId,
+      due_date: new Date(now.getTime() + days * 24 * 60 * 60 * 1000),
       status: 'pending',
     }));
 
-    await this.prisma.revision.createMany({
-      data: revisions,
-    });
+    await this.db.createRevisions(revisions);
   }
 }

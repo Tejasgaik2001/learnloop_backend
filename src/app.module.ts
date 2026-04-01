@@ -6,14 +6,14 @@ import { TopicsModule } from './topics/topics.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { PracticeModule } from './practice/practice.module';
 import { DashboardModule } from './dashboard/dashboard.module';
-import { PrismaModule } from './common/prisma.module';
+import { DatabaseModule } from './common/database.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    PrismaModule,
+    DatabaseModule,
     AuthModule,
     UsersModule,
     TopicsModule,

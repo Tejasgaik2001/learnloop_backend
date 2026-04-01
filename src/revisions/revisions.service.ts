@@ -1,46 +1,23 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../common/prisma.service';
+import { DatabaseService } from '../common/database.service';
 import { CompleteRevisionDto } from './dto';
 
 @Injectable()
 export class RevisionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly db: DatabaseService) {}
 
   async getToday(userId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    return this.prisma.revision.findMany({
-      where: {
-        userId,
-        status: 'pending',
-        dueDate: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-      include: {
-        topic: true,
-      },
-      orderBy: {
-        dueDate: 'asc',
-      },
-    });
+    return this.db.findTodayRevisions(userId);
   }
 
   async complete(id: string, userId: string, dto: CompleteRevisionDto) {
-    const revision = await this.prisma.revision.findUnique({
-      where: { id },
-      include: { topic: true },
-    });
+    const revision = await this.db.findRevisionById(id);
 
     if (!revision) {
       throw new NotFoundException('Revision not found');
     }
 
-    if (revision.userId !== userId) {
+    if (revision.user_id !== userId) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -49,37 +26,29 @@ export class RevisionsService {
 
     // Update strength score
     const strengthChange = this.getStrengthChange(dto.confidence);
-    const newStrength = Math.min(100, Math.max(0, revision.topic.strengthScore + strengthChange));
+    const newStrength = Math.min(100, Math.max(0, revision.strength_score + strengthChange));
 
-    await this.prisma.$transaction([
+    await this.db.transaction(async (trx) => {
       // Update this revision
-      this.prisma.revision.update({
-        where: { id },
-        data: {
-          status: 'completed',
-          confidence: dto.confidence,
-          nextDueDate,
-        },
-      }),
+      await this.db.updateRevision(id, {
+        status: 'completed',
+        confidence: dto.confidence,
+        next_due_date: nextDueDate,
+      });
+
       // Update topic strength score
-      this.prisma.topic.update({
-        where: { id: revision.topicId },
-        data: {
-          strengthScore: newStrength,
-        },
-      }),
+      await this.db.updateTopicStrength(revision.topic_id, newStrength);
+
       // Create next revision if confidence wasn't "forgot"
-      ...(dto.confidence !== 'forgot' ? [
-        this.prisma.revision.create({
-          data: {
-            topicId: revision.topicId,
-            userId,
-            dueDate: nextDueDate,
-            status: 'pending',
-          },
-        }),
-      ] : []),
-    ]);
+      if (dto.confidence !== 'forgot') {
+        await this.db.createRevision({
+          topic_id: revision.topic_id,
+          user_id: userId,
+          due_date: nextDueDate,
+          status: 'pending',
+        });
+      }
+    });
 
     return {
       message: 'Revision completed successfully',

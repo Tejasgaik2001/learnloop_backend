@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../common/prisma.service';
+import { DatabaseService } from '../common/database.service';
 
 @Injectable()
 export class DashboardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly db: DatabaseService) {}
 
   async getSummary(userId: string) {
     const today = new Date();
@@ -23,54 +23,53 @@ export class DashboardService {
       weeklyRevisions,
     ] = await Promise.all([
       // Count revisions due today
-      this.prisma.revision.count({
-        where: {
-          userId,
+      this.db.knex('revisions')
+        .where({
+          user_id: userId,
           status: 'pending',
-          dueDate: {
-            gte: today,
-            lt: tomorrow,
-          },
-        },
-      }),
+        })
+        .whereBetween('due_date', [today, tomorrow])
+        .count('* as count')
+        .first()
+        .then(result => Number(result?.count || 0)),
 
       // Total topics
-      this.prisma.topic.count({
-        where: { userId },
-      }),
+      this.db.knex('topics')
+        .where({ user_id: userId })
+        .count('* as count')
+        .first()
+        .then(result => Number(result?.count || 0)),
 
       // Weak topics (strength < 60)
-      this.prisma.topic.count({
-        where: {
-          userId,
-          strengthScore: {
-            lt: 60,
-          },
-        },
-      }),
+      this.db.knex('topics')
+        .where({
+          user_id: userId,
+        })
+        .where('strength_score', '<', 60)
+        .count('* as count')
+        .first()
+        .then(result => Number(result?.count || 0)),
 
       // Calculate streak (simplified - count consecutive days with completed revisions)
       this.calculateStreak(userId),
 
       // Weekly completed revisions
-      this.prisma.revision.count({
-        where: {
-          userId,
+      this.db.knex('revisions')
+        .where({
+          user_id: userId,
           status: 'completed',
-          updatedAt: {
-            gte: weekAgo,
-          },
-        },
-      }),
+        })
+        .where('updated_at', '>=', weekAgo)
+        .count('* as count')
+        .first()
+        .then(result => Number(result?.count || 0)),
     ]);
 
     // Get retention rate (average strength score)
-    const avgStrength = await this.prisma.topic.aggregate({
-      where: { userId },
-      _avg: {
-        strengthScore: true,
-      },
-    });
+    const avgStrength = await this.db.knex('topics')
+      .where({ user_id: userId })
+      .avg('strength_score as avg_strength')
+      .first();
 
     return {
       dueToday,
@@ -78,31 +77,26 @@ export class DashboardService {
       weakTopics,
       streak,
       weeklyRevisions,
-      retention: Math.round(avgStrength._avg.strengthScore || 0),
+      retention: Math.round(Number(avgStrength?.avg_strength) || 0),
       hoursThisWeek: Math.round((weeklyRevisions * 15) / 60 * 10) / 10, // Estimate: 15 min per revision
     };
   }
 
   private async calculateStreak(userId: string): Promise<number> {
     // Get all completed revisions ordered by date
-    const revisions = await this.prisma.revision.findMany({
-      where: {
-        userId,
+    const revisions = await this.db.knex('revisions')
+      .where({
+        user_id: userId,
         status: 'completed',
-      },
-      orderBy: {
-        updatedAt: 'desc',
-      },
-      select: {
-        updatedAt: true,
-      },
-    });
+      })
+      .orderBy('updated_at', 'desc')
+      .select('updated_at');
 
     if (revisions.length === 0) return 0;
 
     // Group by date
     const datesWithRevisions = new Set(
-      revisions.map((r) => r.updatedAt.toISOString().split('T')[0]),
+      revisions.map((r) => new Date(r.updated_at).toISOString().split('T')[0]),
     );
 
     // Calculate streak
