@@ -89,6 +89,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     topic_id: string;
     user_id: string;
     due_date: Date;
+    revision_day?: number;
     status: string;
   }) {
     const [revision] = await this.db('revisions').insert(revisionData).returning('*');
@@ -116,7 +117,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         'revisions.*',
         'topics.title',
         'topics.category',
-        'topics.notes'
+        'topics.notes',
+        'revisions.revision_day'
       )
       .orderBy('revisions.due_date', 'asc');
   }
@@ -130,7 +132,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         'topics.title',
         'topics.category',
         'topics.notes',
-        'topics.strength_score'
+        'topics.strength_score',
+        'revisions.revision_day'
       )
       .first();
   }

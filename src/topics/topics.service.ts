@@ -58,12 +58,13 @@ export class TopicsService {
 
   private async createInitialRevisions(topicId: string, userId: string) {
     const now = new Date();
-    const schedule = [1, 3, 7, 15, 30]; // Days from now
+    const schedule = [1, 4, 7];
 
     const revisions = schedule.map((days) => ({
       topic_id: topicId,
       user_id: userId,
       due_date: new Date(now.getTime() + days * 24 * 60 * 60 * 1000),
+      revision_day: days,
       status: 'pending',
     }));
 
