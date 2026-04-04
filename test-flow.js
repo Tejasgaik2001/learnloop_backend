@@ -9,17 +9,9 @@ async function testFlow() {
     // Test 1: Authentication Flow
     console.log('1️⃣ Testing Authentication Flow...');
     
-    // Register new user
-    const registerResponse = await axios.post(`${API_BASE}/auth/register`, {
-      name: 'Test User',
-      email: 'test@example.com',
-      password: 'password123'
-    });
-    console.log('✅ Register successful:', registerResponse.data.user.name);
-    
-    // Login
+    // Login with existing user
     const loginResponse = await axios.post(`${API_BASE}/auth/login`, {
-      email: 'test@example.com',
+      email: 'john@example.com',
       password: 'password123'
     });
     const token = loginResponse.data.token;
@@ -93,7 +85,8 @@ async function testFlow() {
       const practiceResponse = await axios.post(`${API_BASE}/practice`, {
         topicId: topicsResponse.data[0].id,
         question: 'What is async/await?',
-        answer: 'Syntactic sugar over Promises for cleaner async code'
+        answer: 'Syntactic sugar over Promises for cleaner async code',
+        result: 'correct'
       }, { headers: authHeaders });
       console.log('✅ Practice session created');
     }
