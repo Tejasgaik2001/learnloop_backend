@@ -2,15 +2,12 @@ import { IsString, IsIn, IsUUID, IsNumber, IsOptional, IsArray, ValidateNested, 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
-// Re-export old DTO for backward compatibility
-export { CreatePracticeDto } from './create-practice.dto';
-
-// New comprehensive practice DTOs
 export enum QuestionType {
   MCQ = 'mcq',
   SHORT_ANSWER = 'short_answer',
 }
 
+// Answer submission DTO
 export class AnswerSubmissionDto {
   @ApiProperty({ example: 'question-uuid' })
   @IsUUID()
@@ -26,6 +23,7 @@ export class AnswerSubmissionDto {
   timeTaken?: number;
 }
 
+// Submit practice session DTO
 export class SubmitPracticeDto {
   @ApiProperty({ type: [AnswerSubmissionDto] })
   @IsArray()
@@ -34,6 +32,7 @@ export class SubmitPracticeDto {
   answers: AnswerSubmissionDto[];
 }
 
+// Practice result response
 export class PracticeResultDto {
   @ApiProperty()
   score: number;
@@ -54,6 +53,7 @@ export class PracticeResultDto {
   weakAreas: string[];
 }
 
+// Question response DTO
 export class QuestionDto {
   @ApiProperty()
   id: string;
@@ -77,6 +77,15 @@ export class QuestionDto {
   topicTitle: string;
 }
 
+// Get random questions query DTO
+export class GetRandomQuestionsDto {
+  @ApiPropertyOptional({ example: 10, default: 10 })
+  @IsOptional()
+  @IsNumber()
+  limit?: number = 10;
+}
+
+// Create question DTO (for admin/seeding)
 export class CreateQuestionDto {
   @ApiProperty({ example: 'topic-uuid' })
   @IsUUID()
@@ -86,26 +95,62 @@ export class CreateQuestionDto {
   @IsIn(['mcq', 'short_answer'])
   type: QuestionType;
 
-  @ApiProperty({ example: 'What is the output?' })
+  @ApiProperty({ example: 'What is the output of 2 + 2?' })
   @IsString()
   question: string;
 
-  @ApiPropertyOptional({ example: ['A', 'B', 'C', 'D'] })
+  @ApiPropertyOptional({ example: ['3', '4', '5', '6'] })
   @IsOptional()
   @IsArray()
   options?: string[];
 
-  @ApiProperty({ example: 'Answer' })
+  @ApiProperty({ example: '4' })
   @IsString()
   correctAnswer: string;
 
-  @ApiPropertyOptional({ example: 2 })
+  @ApiPropertyOptional({ example: 2, minimum: 1, maximum: 5 })
   @IsOptional()
   @IsNumber()
-  difficulty?: number;
+  difficulty?: number = 2;
 
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @IsNumber()
-  weight?: number;
+  weight?: number = 1;
+}
+
+// Practice session response
+export class PracticeSessionDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  userId: string;
+
+  @ApiProperty()
+  score: number;
+
+  @ApiProperty()
+  totalQuestions: number;
+
+  @ApiProperty()
+  completedAt: Date;
+}
+
+// Attempt response
+export class PracticeAttemptDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  questionId: string;
+
+  @ApiProperty()
+  selectedAnswer: string;
+
+  @ApiProperty()
+  isCorrect: boolean;
+
+  @ApiProperty()
+  timeTaken: number;
 }

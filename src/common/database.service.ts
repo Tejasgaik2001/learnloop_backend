@@ -38,11 +38,11 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   async findUserByEmail(email: string) {
-    return this.db('users').where({ email }).first();
+    return this.db('users').where({ email }).select('*').first();
   }
 
   async findUserById(id: string) {
-    return this.db('users').where({ id }).first();
+    return this.db('users').where({ id }).select('*').first();
   }
 
   // Topics
@@ -158,6 +158,29 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     return topic;
   }
 
+  async findAllRevisions(userId: string) {
+    return this.db('revisions')
+      .join('topics', 'revisions.topic_id', 'topics.id')
+      .where('revisions.user_id', userId)
+      .select(
+        'revisions.*',
+        'topics.title',
+        'topics.category',
+        'topics.notes',
+        'topics.strength_score'
+      )
+      .orderBy('revisions.due_date', 'asc');
+  }
+
+  async findWeakTopics(userId: string, limit: number = 5) {
+    return this.db('topics')
+      .where({ user_id: userId })
+      .where('strength_score', '<', 70)
+      .orderBy('strength_score', 'asc')
+      .limit(limit)
+      .select('id', 'title', 'category', 'strength_score');
+  }
+
   // Practice Sessions
   async createPracticeSession(sessionData: {
     topic_id: string;
@@ -180,6 +203,137 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         'topics.category'
       )
       .orderBy('practice_sessions.completed_at', 'desc');
+  }
+
+  // Practice Module - Questions
+  async createQuestion(questionData: {
+    topic_id: string;
+    type: string;
+    question: string;
+    options?: any;
+    correct_answer: string;
+    difficulty: number;
+    weight: number;
+  }) {
+    const [question] = await this.db('questions').insert(questionData).returning('*');
+    return question;
+  }
+
+  async findQuestionsByTopicId(topicId: string) {
+    return this.db('questions')
+      .where({ topic_id: topicId })
+      .orderBy('created_at', 'desc');
+  }
+
+  async findAllQuestionsForUser(userId: string) {
+    return this.db('questions')
+      .join('topics', 'questions.topic_id', 'topics.id')
+      .where('topics.user_id', userId)
+      .select(
+        'questions.*',
+        'topics.title as topic_title',
+        'topics.category',
+        'topics.retention_score'
+      );
+  }
+
+  async findWeakTopicQuestions(userId: string, limit: number = 10) {
+    return this.db('questions')
+      .join('topics', 'questions.topic_id', 'topics.id')
+      .where('topics.user_id', userId)
+      .where('topics.retention_score', '<', 60)
+      .orderByRaw('RANDOM()')
+      .limit(limit)
+      .select(
+        'questions.*',
+        'topics.title as topic_title',
+        'topics.category',
+        'topics.retention_score'
+      );
+  }
+
+  async findRandomQuestions(userId: string, limit: number = 10) {
+    return this.db('questions')
+      .join('topics', 'questions.topic_id', 'topics.id')
+      .where('topics.user_id', userId)
+      .orderByRaw('RANDOM()')
+      .limit(limit)
+      .select(
+        'questions.*',
+        'topics.title as topic_title',
+        'topics.category',
+        'topics.retention_score'
+      );
+  }
+
+  async findQuestionsByTopic(topicId: string, limit: number = 10) {
+    return this.db('questions')
+      .join('topics', 'questions.topic_id', 'topics.id')
+      .where('questions.topic_id', topicId)
+      .orderByRaw('RANDOM()')
+      .limit(limit)
+      .select(
+        'questions.*',
+        'topics.title as topic_title',
+        'topics.category'
+      );
+  }
+
+  async updateQuestionLastAsked(questionId: string) {
+    await this.db('questions')
+      .where({ id: questionId })
+      .update({ last_asked_at: new Date() });
+  }
+
+  async findQuestionById(id: string) {
+    return this.db('questions').where({ id }).first();
+  }
+
+  // Practice Sessions & Attempts
+  async createPracticeSessionFull(sessionData: {
+    user_id: string;
+    score: number;
+    total_questions: number;
+    correct_count: number;
+    incorrect_count: number;
+    percentage: number;
+    weak_areas: any;
+  }) {
+    const [session] = await this.db('practice_sessions').insert(sessionData).returning('*');
+    return session;
+  }
+
+  async createPracticeAttempt(attemptData: {
+    session_id: string;
+    question_id: string;
+    selected_answer: string;
+    is_correct: boolean;
+    time_taken?: number;
+  }) {
+    const [attempt] = await this.db('practice_attempts').insert(attemptData).returning('*');
+    return attempt;
+  }
+
+  async findSessionById(sessionId: string) {
+    return this.db('practice_sessions').where({ id: sessionId }).first();
+  }
+
+  async findAttemptsBySessionId(sessionId: string) {
+    return this.db('practice_attempts')
+      .join('questions', 'practice_attempts.question_id', 'questions.id')
+      .where({ session_id: sessionId })
+      .select(
+        'practice_attempts.*',
+        'questions.question',
+        'questions.correct_answer',
+        'questions.topic_id'
+      );
+  }
+
+  async updateTopicRetentionScore(topicId: string, score: number) {
+    await this.db('topics')
+      .where({ id: topicId })
+      .update({ retention_score: score });
   }
 
   // Transaction support

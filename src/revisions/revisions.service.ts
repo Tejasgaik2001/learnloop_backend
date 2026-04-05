@@ -6,8 +6,16 @@ import { CompleteRevisionDto } from './dto';
 export class RevisionsService {
   constructor(private readonly db: DatabaseService) {}
 
+  async getAll(userId: string) {
+    return this.db.findAllRevisions(userId);
+  }
+
   async getToday(userId: string) {
     return this.db.findTodayRevisions(userId);
+  }
+
+  async getWeakTopics(userId: string) {
+    return this.db.findWeakTopics(userId, 5);
   }
 
   async complete(id: string, userId: string, dto: CompleteRevisionDto) {

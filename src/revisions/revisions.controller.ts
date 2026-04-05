@@ -11,10 +11,22 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class RevisionsController {
   constructor(private revisionsService: RevisionsService) {}
 
+  @Get()
+  @ApiOperation({ summary: 'Get all revisions for user' })
+  async getAll(@Request() req) {
+    return this.revisionsService.getAll(req.user.userId);
+  }
+
   @Get('today')
   @ApiOperation({ summary: 'Get revisions due today' })
   async getToday(@Request() req) {
     return this.revisionsService.getToday(req.user.userId);
+  }
+
+  @Get('weak-topics')
+  @ApiOperation({ summary: 'Get topics needing attention (low strength score)' })
+  async getWeakTopics(@Request() req) {
+    return this.revisionsService.getWeakTopics(req.user.userId);
   }
 
   @Post(':id/complete')
