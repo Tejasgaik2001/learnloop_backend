@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../common/database.service';
+import { ClockService } from '../common/clock.service';
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly clock: ClockService,
+  ) {}
 
   async getSummary(userId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
+    const today = this.clock.today();
+    const tomorrow = this.clock.tomorrow();
     const weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
 
@@ -100,8 +101,7 @@ export class DashboardService {
     );
 
     // Calculate streak
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = this.clock.today();
     let streak = 0;
     let currentDate = new Date(today);
 

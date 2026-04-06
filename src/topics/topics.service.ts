@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from '../common/database.service';
+import { ClockService } from '../common/clock.service';
 import { CreateTopicDto, UpdateTopicDto } from './dto';
 
 @Injectable()
 export class TopicsService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private clock: ClockService,
+  ) {}
 
   async create(userId: string, dto: CreateTopicDto) {
     const topic = await this.db.createTopic({
@@ -15,7 +19,7 @@ export class TopicsService {
       code_snippet: dto.codeSnippet,
     });
 
-    // Create initial revision schedule
+    // Create initial revision schedule using user's custom settings
     await this.createInitialRevisions(topic.id, userId);
 
     return topic;
@@ -57,8 +61,11 @@ export class TopicsService {
   }
 
   private async createInitialRevisions(topicId: string, userId: string) {
-    const now = new Date();
-    const schedule = [1, 4, 7];
+    const now = this.clock.now();
+    
+    // Get user's custom revision schedule
+    const settings = await this.db.findOrCreateUserSettings(userId);
+    const schedule = settings.revision_schedule;
 
     const revisions = schedule.map((days) => ({
       topic_id: topicId,

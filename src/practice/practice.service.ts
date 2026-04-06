@@ -22,7 +22,7 @@ export class PracticeService {
   constructor(private readonly db: DatabaseService) {}
 
   async getRandomQuestions(userId: string, limit: number = 10): Promise<QuestionDto[]> {
-    const questions = await this.db.findAllQuestionsForUser(userId);
+    const questions = await this.db.findAllPracticeQuestionsForUser(userId);
     if (questions.length === 0) return [];
 
     const weightedQuestions = questions.map(q => ({
@@ -34,14 +34,14 @@ export class PracticeService {
     const selected = shuffled.slice(0, limit);
 
     for (const q of selected) {
-      await this.db.updateQuestionLastAsked(q.id);
+      await this.db.updatePracticeQuestionLastAsked(q.id);
     }
 
     return selected.map(q => this.mapToQuestionDto(q));
   }
 
   async getWeakQuestions(userId: string, limit: number = 10): Promise<QuestionDto[]> {
-    const questions = await this.db.findWeakTopicQuestions(userId, limit * 2);
+    const questions = await this.db.findWeakTopicPracticeQuestions(userId, limit * 2);
     if (questions.length === 0) {
       return this.getRandomQuestions(userId, limit);
     }
@@ -55,7 +55,7 @@ export class PracticeService {
     const selected = shuffled.slice(0, limit);
 
     for (const q of selected) {
-      await this.db.updateQuestionLastAsked(q.id);
+      await this.db.updatePracticeQuestionLastAsked(q.id);
     }
 
     return selected.map(q => this.mapToQuestionDto(q));
@@ -65,9 +65,9 @@ export class PracticeService {
     const topic = await this.db.findTopicById(topicId);
     if (!topic) throw new NotFoundException('Topic not found');
 
-    const questions = await this.db.findQuestionsByTopic(topicId, limit);
+    const questions = await this.db.findPracticeQuestionsByTopic(topicId, limit);
     for (const q of questions) {
-      await this.db.updateQuestionLastAsked(q.id);
+      await this.db.updatePracticeQuestionLastAsked(q.id);
     }
 
     return questions.map(q => this.mapToQuestionDto(q));
@@ -93,7 +93,7 @@ export class PracticeService {
       category: r.category,
     }));
 
-    const randomQuestions = await this.db.findRandomQuestions(userId, randomCount);
+    const randomQuestions = await this.db.findRandomPracticeQuestions(userId, randomCount);
     const randomWithWeight: QuestionWithWeight[] = randomQuestions.map(q => ({
       ...q,
       calculatedWeight: this.calculateWeight(q),
@@ -105,7 +105,7 @@ export class PracticeService {
 
     for (const q of selected) {
       if (q.type !== 'revision_card') {
-        await this.db.updateQuestionLastAsked(q.id);
+        await this.db.updatePracticeQuestionLastAsked(q.id);
       }
     }
 
@@ -136,7 +136,7 @@ export class PracticeService {
     const topicStats: Map<string, { correct: number; total: number; topicTitle: string }> = new Map();
 
     for (const answer of answers) {
-      const question = await this.db.findQuestionById(answer.questionId);
+      const question = await this.db.findPracticeQuestionById(answer.questionId);
       if (!question) continue;
 
       const isCorrect = this.checkAnswer(question, answer.selectedAnswer);
@@ -270,7 +270,7 @@ export class PracticeService {
     difficulty: number;
     weight: number;
   }) {
-    return this.db.createQuestion(questionData);
+    return this.db.createPracticeQuestion(questionData);
   }
 
   async create(userId: string, dto: any) {

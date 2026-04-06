@@ -5,7 +5,9 @@ import { UsersModule } from './users/users.module';
 import { TopicsModule } from './topics/topics.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { PracticeModule } from './practice/practice.module';
+import { QuestionsModule } from './questions/questions.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { SettingsModule } from './settings/settings.module';
 import { DatabaseModule } from './common/database.module';
 
 @Module({
@@ -19,7 +21,9 @@ import { DatabaseModule } from './common/database.module';
     TopicsModule,
     RevisionsModule,
     PracticeModule,
+    QuestionsModule,
     DashboardModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

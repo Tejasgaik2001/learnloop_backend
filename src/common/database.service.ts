@@ -1,9 +1,12 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import knex, { Knex } from 'knex';
+import { ClockService } from './clock.service';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private db: Knex;
+
+  constructor(private readonly clock: ClockService) {}
 
   async onModuleInit() {
     this.db = knex({
@@ -33,7 +36,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     email: string;
     password_hash: string;
   }) {
-    const [user] = await this.db('users').insert(userData).returning('*');
+    const [user] = await this.db('users').insert({...userData, created_at: this.clock.now()}).returning('*');
     return user;
   }
 
@@ -53,7 +56,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     notes: string;
     code_snippet?: string;
   }) {
-    const [topic] = await this.db('topics').insert(topicData).returning('*');
+    const [topic] = await this.db('topics').insert({...topicData, created_at: this.clock.now(), updated_at: this.clock.now()}).returning('*');
     return topic;
   }
 
@@ -92,7 +95,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     revision_day?: number;
     status: string;
   }) {
-    const [revision] = await this.db('revisions').insert(revisionData).returning('*');
+    const [revision] = await this.db('revisions').insert({...revisionData, created_at: this.clock.now()}).returning('*');
     return revision;
   }
 
@@ -101,10 +104,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   async findTodayRevisions(userId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const today = this.clock.today();
+    const tomorrow = this.clock.tomorrow();
 
     return this.db('revisions')
       .join('topics', 'revisions.topic_id', 'topics.id')
@@ -205,8 +206,22 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       .orderBy('practice_sessions.completed_at', 'desc');
   }
 
-  // Practice Module - Questions
-  async createQuestion(questionData: {
+  // Practice Sessions & Attempts
+  async createPracticeSessionFull(sessionData: {
+    user_id: string;
+    score: number;
+    total_questions: number;
+    correct_count: number;
+    incorrect_count: number;
+    percentage: number;
+    weak_areas: any;
+  }) {
+    const [session] = await this.db('practice_sessions').insert(sessionData).returning('*');
+    return session;
+  }
+
+  // Practice Module - Legacy Question Methods (for topic-based questions)
+  async createPracticeQuestion(questionData: {
     topic_id: string;
     type: string;
     question: string;
@@ -219,13 +234,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     return question;
   }
 
-  async findQuestionsByTopicId(topicId: string) {
+  async findPracticeQuestionsByTopicId(topicId: string) {
     return this.db('questions')
       .where({ topic_id: topicId })
       .orderBy('created_at', 'desc');
   }
 
-  async findAllQuestionsForUser(userId: string) {
+  async findAllPracticeQuestionsForUser(userId: string) {
     return this.db('questions')
       .join('topics', 'questions.topic_id', 'topics.id')
       .where('topics.user_id', userId)
@@ -237,7 +252,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       );
   }
 
-  async findWeakTopicQuestions(userId: string, limit: number = 10) {
+  async findWeakTopicPracticeQuestions(userId: string, limit: number = 10) {
     return this.db('questions')
       .join('topics', 'questions.topic_id', 'topics.id')
       .where('topics.user_id', userId)
@@ -252,7 +267,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       );
   }
 
-  async findRandomQuestions(userId: string, limit: number = 10) {
+  async findRandomPracticeQuestions(userId: string, limit: number = 10) {
     return this.db('questions')
       .join('topics', 'questions.topic_id', 'topics.id')
       .where('topics.user_id', userId)
@@ -266,7 +281,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       );
   }
 
-  async findQuestionsByTopic(topicId: string, limit: number = 10) {
+  async findPracticeQuestionsByTopic(topicId: string, limit: number = 10) {
     return this.db('questions')
       .join('topics', 'questions.topic_id', 'topics.id')
       .where('questions.topic_id', topicId)
@@ -279,28 +294,14 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       );
   }
 
-  async updateQuestionLastAsked(questionId: string) {
+  async updatePracticeQuestionLastAsked(questionId: string) {
     await this.db('questions')
       .where({ id: questionId })
-      .update({ last_asked_at: new Date() });
+      .update({ last_asked_at: this.clock.now() });
   }
 
-  async findQuestionById(id: string) {
+  async findPracticeQuestionById(id: string) {
     return this.db('questions').where({ id }).first();
-  }
-
-  // Practice Sessions & Attempts
-  async createPracticeSessionFull(sessionData: {
-    user_id: string;
-    score: number;
-    total_questions: number;
-    correct_count: number;
-    incorrect_count: number;
-    percentage: number;
-    weak_areas: any;
-  }) {
-    const [session] = await this.db('practice_sessions').insert(sessionData).returning('*');
-    return session;
   }
 
   async createPracticeAttempt(attemptData: {
@@ -334,6 +335,135 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.db('topics')
       .where({ id: topicId })
       .update({ retention_score: score });
+  }
+
+  // User Settings - Custom Revision Schedule
+  async findOrCreateUserSettings(userId: string) {
+    let settings = await this.db('user_settings')
+      .where({ user_id: userId })
+      .first();
+
+    if (!settings) {
+      // Create default settings
+      const [newSettings] = await this.db('user_settings')
+        .insert({
+          user_id: userId,
+          revision_schedule: [1, 4, 7, 14, 30, 60, 90],
+          created_at: this.clock.now(),
+          updated_at: this.clock.now(),
+        })
+        .returning('*');
+      settings = newSettings;
+    }
+
+    return settings;
+  }
+
+  async updateUserSettings(userId: string, revisionSchedule: number[]) {
+    const [settings] = await this.db('user_settings')
+      .where({ user_id: userId })
+      .update({
+        revision_schedule: revisionSchedule,
+        updated_at: this.clock.now(),
+      })
+      .returning('*');
+    return settings;
+  }
+
+  // Question Management Methods
+  async createQuestion(questionData: {
+    user_id: string;
+    question: string;
+    answer: string;
+    category?: string | null;
+    difficulty?: string;
+    topic?: string | null;
+    tags?: string[];
+  }) {
+    const [question] = await this.db('questions')
+      .insert({
+        ...questionData,
+        times_asked: 0,
+        times_correct: 0,
+        created_at: this.clock.now(),
+        updated_at: this.clock.now(),
+      })
+      .returning('*');
+    return question;
+  }
+
+  async findQuestionsByUser(userId: string, filters?: { category?: string; difficulty?: string }) {
+    let query = this.db('questions').where({ user_id: userId });
+    
+    if (filters?.category) {
+      query = query.where({ category: filters.category });
+    }
+    if (filters?.difficulty) {
+      query = query.where({ difficulty: filters.difficulty });
+    }
+    
+    return query.orderBy('created_at', 'desc');
+  }
+
+  async findQuestionById(id: string) {
+    return this.db('questions').where({ id }).first();
+  }
+
+  async updateQuestion(id: string, questionData: Partial<{
+    question: string;
+    answer: string;
+    category: string | null;
+    difficulty: string;
+    topic: string | null;
+    tags: string[];
+  }>) {
+    const [updated] = await this.db('questions')
+      .where({ id })
+      .update({
+        ...questionData,
+        updated_at: this.clock.now(),
+      })
+      .returning('*');
+    return updated;
+  }
+
+  async deleteQuestion(id: string) {
+    await this.db('questions').where({ id }).del();
+  }
+
+  async getRandomQuestions(userId: string, options: { count: number; category?: string; difficulty?: string }) {
+    let query = this.db('questions').where({ user_id: userId });
+    
+    if (options.category) {
+      query = query.where({ category: options.category });
+    }
+    if (options.difficulty) {
+      query = query.where({ difficulty: options.difficulty });
+    }
+    
+    // PostgreSQL random ordering
+    return query.orderByRaw('RANDOM()').limit(options.count);
+  }
+
+  async recordQuestionAttempt(questionId: string, isCorrect: boolean) {
+    const question = await this.findQuestionById(questionId);
+    if (!question) return;
+
+    await this.db('questions')
+      .where({ id: questionId })
+      .update({
+        times_asked: question.times_asked + 1,
+        times_correct: isCorrect ? question.times_correct + 1 : question.times_correct,
+        updated_at: this.clock.now(),
+      });
+  }
+
+  async getQuestionCategories(userId: string) {
+    const result = await this.db('questions')
+      .where({ user_id: userId })
+      .distinct('category')
+      .whereNotNull('category');
+    return result.map(r => r.category).filter(Boolean);
   }
 
   // Transaction support
