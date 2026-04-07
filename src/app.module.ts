@@ -8,6 +8,7 @@ import { PracticeModule } from './practice/practice.module';
 import { QuestionsModule } from './questions/questions.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SettingsModule } from './settings/settings.module';
+import { ProgressModule } from './progress/progress.module';
 import { DatabaseModule } from './common/database.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { DatabaseModule } from './common/database.module';
     QuestionsModule,
     DashboardModule,
     SettingsModule,
+    ProgressModule,
   ],
 })
 export class AppModule {}

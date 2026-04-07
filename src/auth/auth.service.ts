@@ -37,24 +37,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Validate that password_hash exists
-    if (!user.password_hash) {
-      console.error('User found but password_hash is missing:', { userId: user.id, email: user.email });
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Validate that password is provided
-    if (!dto.password) {
-      throw new UnauthorizedException('Password is required');
-    }
-
-    try {
-      const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
-      if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-    } catch (error) {
-      console.error('Password comparison error:', error);
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
+    if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -74,7 +58,7 @@ export class AuthService {
   }
 
   private sanitizeUser(user: any) {
-    const { passwordHash, ...sanitized } = user;
+    const { password_hash, ...sanitized } = user;
     return sanitized;
   }
 }

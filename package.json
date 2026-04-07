@@ -21,8 +21,7 @@
     "db:migrate": "npx knex migrate:latest",
     "db:rollback": "npx knex migrate:rollback",
     "db:make": "npx knex migrate:make",
-    "db:seed": "npx knex seed:run",
-    "seed": "ts-node src/seeds/seed.ts"
+    "db:seed": "npx knex seed:run"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
@@ -32,6 +31,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.3.0",
     "@nestjs/swagger": "^7.2.0",
+    "axios": "^1.14.0",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
