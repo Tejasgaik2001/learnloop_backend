@@ -55,6 +55,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     category: string;
     notes: string;
     code_snippet?: string;
+    source_url?: string;
+    problem_type?: string;
+    key_concept?: string;
+    expected_output?: string;
+    mistake?: string;
+    difficulty?: string;
+    revision_pattern?: string;
   }) {
     const [topic] = await this.db('topics').insert({...topicData, created_at: this.clock.now(), updated_at: this.clock.now()}).returning('*');
     return topic;
@@ -75,6 +82,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     category?: string;
     notes?: string;
     code_snippet?: string;
+    source_url?: string;
+    problem_type?: string;
+    key_concept?: string;
+    expected_output?: string;
+    mistake?: string;
+    difficulty?: string;
+    revision_pattern?: string;
   }) {
     const [topic] = await this.db('topics')
       .where({ id })

@@ -17,6 +17,13 @@ export class TopicsService {
       category: dto.category,
       notes: dto.notes,
       code_snippet: dto.codeSnippet,
+      source_url: dto.sourceUrl,
+      problem_type: dto.problemType,
+      key_concept: dto.keyConcept,
+      expected_output: dto.expectedOutput,
+      mistake: dto.mistake,
+      difficulty: dto.difficulty,
+      revision_pattern: dto.revisionPattern,
     });
 
     // Create initial revision schedule using user's custom settings
@@ -51,6 +58,13 @@ export class TopicsService {
       category: dto.category,
       notes: dto.notes,
       code_snippet: dto.codeSnippet,
+      source_url: dto.sourceUrl,
+      problem_type: dto.problemType,
+      key_concept: dto.keyConcept,
+      expected_output: dto.expectedOutput,
+      mistake: dto.mistake,
+      difficulty: dto.difficulty,
+      revision_pattern: dto.revisionPattern,
     });
   }
 
