@@ -10,7 +10,7 @@ export class CreateQuestionDto {
   @IsString()
   answer: string;
 
-  @ApiProperty({ example: 'JavaScript', required: false })
+  @ApiProperty({ example: 'DSA', required: false, enum: ['DSA', 'Frontend', 'Backend', 'Debugging', 'Architecture', 'DevOps'] })
   @IsString()
   @IsOptional()
   category?: string;
@@ -42,7 +42,7 @@ export class UpdateQuestionDto {
   @IsOptional()
   answer?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, enum: ['DSA', 'Frontend', 'Backend', 'Debugging', 'Architecture', 'DevOps'] })
   @IsString()
   @IsOptional()
   category?: string;
