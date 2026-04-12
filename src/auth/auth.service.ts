@@ -32,22 +32,34 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.usersService.findByEmail(dto.email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+  const user = await this.usersService.findByEmail(dto.email);
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const token = this.generateToken(user.id, user.email);
-    return {
-      user: this.sanitizeUser(user),
-      token,
-    };
+  if (!user) {
+    console.log('User not found for email:', dto.email);
+    throw new UnauthorizedException('Invalid credentials');
   }
+
+  console.log('Entered password:', dto.password);
+  console.log('Stored hash:', user.password_hash);
+
+  const isPasswordValid = await bcrypt.compare(
+    dto.password,
+    user.password_hash
+  );
+
+  console.log('Password match result:', isPasswordValid);
+
+  if (!isPasswordValid) {
+    throw new UnauthorizedException('Invalid credentials');
+  }
+
+  const token = this.generateToken(user.id, user.email);
+
+  return {
+    user: this.sanitizeUser(user),
+    token,
+  };
+}
 
   async validateUser(userId: string) {
     return this.usersService.findById(userId);
