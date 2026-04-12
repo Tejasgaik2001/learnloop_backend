@@ -23,6 +23,36 @@ export class RevisionsController {
     return this.revisionsService.getToday(req.user.userId);
   }
 
+  @Get('pending')
+  @ApiOperation({ summary: 'Get pending (missed) revisions' })
+  async getPending(@Request() req) {
+    return this.revisionsService.getPending(req.user.userId);
+  }
+
+  @Get('upcoming')
+  @ApiOperation({ summary: 'Get upcoming revisions' })
+  async getUpcoming(@Request() req) {
+    return this.revisionsService.getUpcoming(req.user.userId);
+  }
+
+  @Get('completed')
+  @ApiOperation({ summary: 'Get completed revisions' })
+  async getCompleted(@Request() req) {
+    return this.revisionsService.getCompleted(req.user.userId);
+  }
+
+  @Get(':id/details')
+  @ApiOperation({ summary: 'Get revision details with history' })
+  async getDetails(@Param('id') id: string, @Request() req) {
+    return this.revisionsService.getDetails(id, req.user.userId);
+  }
+
+  @Get('check-missed')
+  @ApiOperation({ summary: 'Check and update missed revisions' })
+  async checkMissed(@Request() req) {
+    return this.revisionsService.checkMissedRevisions(req.user.userId);
+  }
+
   @Get('weak-topics')
   @ApiOperation({ summary: 'Get topics needing attention (low strength score)' })
   async getWeakTopics(@Request() req) {

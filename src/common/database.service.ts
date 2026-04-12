@@ -108,6 +108,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     due_date: Date;
     revision_day?: number;
     status: string;
+    revision_pattern?: string;
+    schedule_type?: string;
+    strength_score?: number;
   }) {
     const [revision] = await this.db('revisions').insert({...revisionData, created_at: this.clock.now()}).returning('*');
     return revision;
@@ -157,6 +160,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     status?: string;
     confidence?: string;
     next_due_date?: Date;
+    completed_at?: Date;
+    missed_count?: number;
   }) {
     const [revision] = await this.db('revisions')
       .where({ id })
@@ -185,6 +190,84 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         'topics.strength_score'
       )
       .orderBy('revisions.due_date', 'asc');
+  }
+
+  async findPendingRevisions(userId: string) {
+    const today = this.clock.today();
+    return this.db('revisions')
+      .join('topics', 'revisions.topic_id', 'topics.id')
+      .where({
+        'revisions.user_id': userId,
+        'revisions.status': 'pending_revision',
+      })
+      .where('revisions.due_date', '<', today)
+      .select(
+        'revisions.*',
+        'topics.title',
+        'topics.category',
+        'topics.notes',
+        'topics.strength_score'
+      )
+      .orderBy('revisions.due_date', 'asc');
+  }
+
+  async findUpcomingRevisions(userId: string) {
+    const today = this.clock.today();
+    const tomorrow = this.clock.tomorrow();
+    return this.db('revisions')
+      .join('topics', 'revisions.topic_id', 'topics.id')
+      .where({
+        'revisions.user_id': userId,
+        'revisions.status': 'pending',
+      })
+      .where('revisions.due_date', '>', tomorrow)
+      .select(
+        'revisions.*',
+        'topics.title',
+        'topics.category',
+        'topics.notes',
+        'topics.strength_score'
+      )
+      .orderBy('revisions.due_date', 'asc');
+  }
+
+  async findCompletedRevisions(userId: string) {
+    return this.db('revisions')
+      .join('topics', 'revisions.topic_id', 'topics.id')
+      .where({
+        'revisions.user_id': userId,
+        'revisions.status': 'completed',
+      })
+      .select(
+        'revisions.*',
+        'topics.title',
+        'topics.category',
+        'topics.notes',
+        'topics.strength_score'
+      )
+      .orderBy('revisions.completed_at', 'desc');
+  }
+
+  async findRevisionHistory(revisionId: string) {
+    return this.db('revision_history')
+      .where({ revision_id: revisionId })
+      .orderBy('scheduled_date', 'asc');
+  }
+
+  async createRevisionHistory(historyData: {
+    revision_id: string;
+    user_id: string;
+    revision_day: number;
+    scheduled_date: Date;
+    completed_date?: Date;
+    status: string;
+    confidence?: string;
+  }) {
+    const [history] = await this.db('revision_history').insert({
+      ...historyData,
+      created_at: this.clock.now(),
+    }).returning('*');
+    return history;
   }
 
   async findWeakTopics(userId: string, limit: number = 5) {
