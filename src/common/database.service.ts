@@ -486,7 +486,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         updated_at: this.clock.now(),
       })
       .returning('*');
-    return question;
+    return [question];
   }
 
   async findQuestionsByUser(userId: string, filters?: { category?: string; difficulty?: string }) {
@@ -521,7 +521,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         updated_at: this.clock.now(),
       })
       .returning('*');
-    return updated;
+    return [updated];
   }
 
   async deleteQuestion(id: string) {
