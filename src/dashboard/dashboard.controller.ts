@@ -8,11 +8,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class DashboardController {
-  constructor(private dashboardService: DashboardService) {}
+  constructor(private dashboardService: DashboardService) { }
 
   @Get('summary')
   @ApiOperation({ summary: 'Get dashboard summary' })
   async getSummary(@Request() req) {
+    console.log(req.user);
     return this.dashboardService.getSummary(req.user.userId);
   }
 }
