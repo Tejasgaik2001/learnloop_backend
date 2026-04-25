@@ -34,10 +34,17 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   async createUser(userData: {
     name: string;
     email: string;
-    password_hash: string;
+    password_hash?: string;
+    google_id?: string;
+    auth_provider?: string;
+    avatar_url?: string;
   }) {
     const [user] = await this.db('users').insert({...userData, created_at: this.clock.now()}).returning('*');
     return user;
+  }
+
+  async findUserByGoogleId(googleId: string) {
+    return this.db('users').where({ google_id: googleId }).select('*').first();
   }
 
   async findUserByEmail(email: string) {

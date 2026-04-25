@@ -1,5 +1,6 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -32,5 +33,23 @@ export class AuthController {
     const user = await this.authService.validateUser(req.user.userId);
     const { passwordHash, ...sanitized } = user;
     return sanitized;
+  }
+
+  @Public()
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Initiate Google OAuth' })
+  async googleAuth() {
+    // Initiates the google oauth flow
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  async googleAuthRedirect(@Request() req, @Res() res) {
+    const token = req.user.token;
+    // Redirect to frontend with token
+    return res.redirect(`http://localhost:5173/auth/callback?token=${token}`);
   }
 }
