@@ -73,4 +73,33 @@ export class AuthService {
     const { password_hash, ...sanitized } = user;
     return sanitized;
   }
+
+  async validateOAuthLogin(profile: any) {
+    const { id, emails, displayName, photos } = profile;
+    const email = emails[0].value;
+    const avatarUrl = photos && photos.length > 0 ? photos[0].value : null;
+
+    let user = await this.usersService.findByGoogleId(id);
+
+    if (!user) {
+      user = await this.usersService.findByEmail(email);
+      if (user) {
+        throw new ConflictException('Email already registered. Please login with password.');
+      }
+
+      user = await this.usersService.create({
+        name: displayName,
+        email,
+        googleId: id,
+        authProvider: 'google',
+        avatarUrl,
+      });
+    }
+
+    const token = this.generateToken(user.id, user.email);
+    return {
+      user: this.sanitizeUser(user),
+      token,
+    };
+  }
 }
