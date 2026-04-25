@@ -8,10 +8,10 @@ services:
     container_name: learn-with-repetition-api
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "3000:3000"
     environment:
       NODE_ENV: production
-      PORT: 3001
+      PORT: 3000
       # Database configuration - update these with your values
       DATABASE_URL: ${DATABASE_URL:-postgresql://user:password@db:5432/learn_with_repetition}
       # JWT configuration - update these with secure values
@@ -23,7 +23,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
       timeout: 3s
       retries: 3

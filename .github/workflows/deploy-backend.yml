@@ -68,7 +68,7 @@ jobs:
             # Run new container
             docker run -d \
               --name learning-backend \
-              -p 3001:3001 \
+              -p 3000:3000 \
               --env-file ~/tejas_project/learning_engine/learning_backend/.env \
               --restart unless-stopped \
               ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
