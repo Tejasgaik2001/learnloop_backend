@@ -50,6 +50,7 @@ export class AuthController {
   async googleAuthRedirect(@Request() req, @Res() res) {
     const token = req.user.token;
     // Redirect to frontend with token
-    return res.redirect(`http://localhost:5173/auth/callback?token=${token}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
   }
 }
