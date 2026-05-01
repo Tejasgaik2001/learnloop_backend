@@ -3,7 +3,7 @@ import { DatabaseService } from '../common/database.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private db: DatabaseService) {}
+  constructor(private db: DatabaseService) { }
 
   async create(data: {
     name: string;
@@ -24,6 +24,7 @@ export class UsersService {
   }
 
   async findByGoogleId(googleId: string) {
+    console.log('googleId', googleId);
     return this.db.findUserByGoogleId(googleId);
   }
 
