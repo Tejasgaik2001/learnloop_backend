@@ -17,7 +17,7 @@ import { GoogleStrategy } from './google.strategy';
       useFactory: (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET') || 'default-secret',
         signOptions: {
-          expiresIn: configService.get('JWT_EXPIRATION') || '7d',
+          expiresIn: (configService.get('JWT_EXPIRATION') || '7d').toString().replace(/"/g, ''),
         },
       }),
       inject: [ConfigService],
