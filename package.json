@@ -37,6 +37,7 @@
     "class-validator": "^0.14.0",
     "knex": "^3.2.8",
     "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.1.13",

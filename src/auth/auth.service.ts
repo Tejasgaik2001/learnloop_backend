@@ -24,7 +24,7 @@ export class AuthService {
       passwordHash,
     });
 
-    const token = this.generateToken(user.id, user.email);
+    const token = this.generateToken(user.id, user.email, user.role);
     return {
       user: this.sanitizeUser(user),
       token,
@@ -53,7 +53,7 @@ export class AuthService {
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  const token = this.generateToken(user.id, user.email);
+  const token = this.generateToken(user.id, user.email, user.role);
 
   return {
     user: this.sanitizeUser(user),
@@ -65,8 +65,8 @@ export class AuthService {
     return this.usersService.findById(userId);
   }
 
-  private generateToken(userId: string, email: string): string {
-    return this.jwtService.sign({ sub: userId, email });
+  private generateToken(userId: string, email: string, role: string): string {
+    return this.jwtService.sign({ sub: userId, email, role });
   }
 
   private sanitizeUser(user: any) {
@@ -96,7 +96,7 @@ export class AuthService {
       });
     }
 
-    const token = this.generateToken(user.id, user.email);
+    const token = this.generateToken(user.id, user.email, user.role);
     return {
       user: this.sanitizeUser(user),
       token,
